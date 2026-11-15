@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BLACK CUTS | Barbería en Santa Cruz · Reserva tu turno</title>
+  <meta name="description" content="BLACK CUTS, barbería en Santa Cruz de la Sierra. Cortes clásicos, modernos y barba. Elige día y hora y reserva tu turno en 1 minuto.">
+  <meta name="theme-color" content="#0d0c0b">
+  <meta property="og:title" content="BLACK CUTS · Reserva tu turno">
+  <meta property="og:description" content="Elige servicio, barbero, día y hora. Tu turno listo en 1 minuto.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230d0c0b'/><text x='50' y='70' font-size='58' font-family='Impact,sans-serif' fill='%23e11d2e' text-anchor='middle'>BC</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Courier+Prime:wght@400;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Aviso de proyecto demo (quítalo si lo usas para un cliente real) -->
+  <div class="demo-bar">
+    Proyecto demo hecho por <strong>tihago.dev</strong>. Prueba la reserva, funciona de verdad.
+  </div>
+
+  <header class="nav">
+    <a href="#inicio" class="logo" aria-label="BLACK CUTS, inicio">
+      <span class="logo-pole" aria-hidden="true"></span>
+      <span>Black<b>Cuts</b></span>
+    </a>
+    <nav aria-label="Principal">
+      <a href="#precios">Precios</a>
+      <a href="#reservar">Reservar</a>
+      <a href="#agenda">Agenda</a>
+      <a href="#visitanos">Visítanos</a>
+    </nav>
+    <a href="#reservar" class="btn btn-red btn-sm">Reservar turno</a>
+  </header>
+
+  <main>
+    <!-- ============ INICIO ============ -->
+    <section class="hero" id="inicio">
+      <div class="hero-text">
+        <p class="status" id="open-status"><span class="dot"></span>Calculando horario…</p>
+        <h1>Más que un corte.<br>Es tu actitud.</h1>
+        <p class="hero-sub">Barbería en Equipetrol, Santa Cruz. Elige tu barbero y tu hora desde el celular, sin esperar en la silla.</p>
+        <div class="hero-actions">
+          <a href="#reservar" class="btn btn-red">Reservar mi turno</a>
+          <a href="#precios" class="btn btn-ghost">Ver precios</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PRECIOS (pizarra) ============ -->
+    <section class="section prices" id="precios">
+      <div class="section-head">
+        <h2>La pizarra</h2>
+        <p>Precios en bolivianos. Pagas en el local, efectivo o QR.</p>
+      </div>
+      <ul class="board" id="board">
+        <!-- Se llena desde app.js con la lista de SERVICIOS -->
+      </ul>
+    </section>
+
+    <!-- ============ RESERVA (micro app) ============ -->
+    <section class="section booking" id="reservar">
+      <div class="section-head">
+        <h2>Reserva tu turno</h2>
+        <p>Cuatro toques y tu turno queda listo. Las horas tachadas ya están ocupadas.</p>
+      </div>
+
+      <div class="booking-grid">
+        <form class="steps" id="booking-form" novalidate>
+          <fieldset class="step">
+            <legend><span class="step-n">1</span>¿Qué te hacemos?</legend>
+            <div class="chips" id="pick-service"></div>
+          </fieldset>
+
+          <fieldset class="step">
+            <legend><span class="step-n">2</span>¿Con quién?</legend>
+            <div class="chips" id="pick-barber"></div>
+          </fieldset>
+
+          <fieldset class="step">
+            <legend><span class="step-n">3</span>¿Qué día?</legend>
+            <div class="chips days" id="pick-day"></div>
+          </fieldset>
+
+          <fieldset class="step">
+            <legend><span class="step-n">4</span>¿A qué hora?</legend>
+            <div class="slots" id="pick-time">
+              <p class="hint">Primero elige servicio y día.</p>
+            </div>
+          </fieldset>
+
+          <fieldset class="step">
+            <legend><span class="step-n">5</span>Tus datos</legend>
+            <div class="fields">
+              <label>Nombre
+                <input type="text" id="client-name" autocomplete="given-name" placeholder="Ej. Carlos" maxlength="30">
+              </label>
+              <label>Celular
+                <input type="tel" id="client-phone" inputmode="numeric" placeholder="Ej. 71234567" maxlength="8">
+              </label>
+            </div>
+            <p class="form-error" id="form-error" role="alert"></p>
+            <button type="submit" class="btn btn-red btn-block" id="confirm-btn">Confirmar turno</button>
+          </fieldset>
+        </form>
+
+        <!-- Ticket que se va llenando mientras eliges -->
+        <aside class="ticket-wrap" aria-live="polite">
+          <div class="ticket" id="ticket">
+            <div class="ticket-top">
+              <span class="ticket-brand">BLACK CUTS</span>
+              <span class="ticket-no" id="t-no">Turno N.º ----</span>
+            </div>
+            <dl class="ticket-rows">
+              <div><dt>Servicio</dt><dd id="t-service">—</dd></div>
+              <div><dt>Barbero</dt><dd id="t-barber">—</dd></div>
+              <div><dt>Día</dt><dd id="t-day">—</dd></div>
+              <div><dt>Hora</dt><dd id="t-time">—</dd></div>
+              <div><dt>Cliente</dt><dd id="t-name">—</dd></div>
+            </dl>
+            <div class="ticket-total">
+              <span>Total</span><strong id="t-total">Bs 0</strong>
+            </div>
+            <p class="ticket-foot" id="t-foot">Llega 5 minutos antes. Si no puedes venir, avísanos.</p>
+            <div class="ticket-stamp" id="t-stamp" aria-hidden="true">Reservado</div>
+          </div>
+          <div class="ticket-actions" id="ticket-actions" hidden>
+            <a class="btn btn-wa btn-block" id="wa-confirm" href="#" target="_blank" rel="noopener">Enviar mi turno por WhatsApp</a>
+            <button type="button" class="btn btn-ghost btn-block" id="new-booking">Hacer otra reserva</button>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ============ AGENDA DEL BARBERO ============ -->
+    <section class="section agenda" id="agenda">
+      <div class="section-head">
+        <h2>Agenda del día</h2>
+        <p>Así ve el dueño las reservas: sin cuaderno, sin mensajes perdidos. Tus reservas de prueba aparecen aquí.</p>
+      </div>
+
+      <div class="agenda-bar">
+        <div class="chips days" id="agenda-day"></div>
+      </div>
+
+      <div class="agenda-stats">
+        <div><strong id="a-count">0</strong><span>turnos</span></div>
+        <div><strong id="a-income">Bs 0</strong><span>ingreso estimado</span></div>
+        <div><strong id="a-next">—</strong><span>próximo turno</span></div>
+      </div>
+
+      <div class="agenda-cols" id="agenda-cols">
+        <!-- Una columna por barbero, se llena desde app.js -->
+      </div>
+    </section>
+
+    <!-- ============ VISÍTANOS ============ -->
+    <section class="section visit" id="visitanos">
+      <div class="visit-photo">
+        <img src="https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=1000&q=80" alt="Barbero haciendo un corte moderno" loading="lazy" width="1000" height="1100">
+      </div>
+      <div class="visit-info">
+        <h2>Visítanos</h2>
+        <p class="visit-lead">Tres sillas, buena música y cero apuro. Cada corte termina con lavado y peinado.</p>
+        <table class="hours" id="hours-table">
+          <caption class="sr-only">Horario de atención</caption>
+          <tbody>
+            <tr><th>Lunes a viernes</th><td>9:00 – 20:00</td></tr>
+            <tr><th>Sábado</th><td>9:00 – 18:00</td></tr>
+            <tr><th>Domingo</th><td>Cerrado</td></tr>
+          </tbody>
+        </table>
+        <p class="address">Av. San Martín, 3.er anillo, Equipetrol<br>Santa Cruz de la Sierra</p>
+        <div class="hero-actions">
+          <a class="btn btn-red" href="#reservar">Reservar turno</a>
+          <a class="btn btn-ghost" href="https://maps.google.com/?q=Equipetrol+Santa+Cruz+de+la+Sierra" target="_blank" rel="noopener">Cómo llegar</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <a href="#inicio" class="logo"><span class="logo-pole" aria-hidden="true"></span><span>Black<b>Cuts</b></span></a>
+    <p>© 2026 BLACK CUTS, Santa Cruz, Bolivia</p>
+    <p>Web y sistema de reservas por <strong>tihago.dev</strong></p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
