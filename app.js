@@ -7,7 +7,9 @@
 
   /* ---------- 1. CONFIGURACIÓN (edita aquí) ---------- */
   // Número de WhatsApp de la barbería: 591 + número, sin "+" ni espacios.
-  const WHATSAPP = '59170000000';
+  const WHATSAPP = ''; // Dejar vacío en la demo; configurar solo para un negocio real.
+  const scrollBehavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+  const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   const SERVICIOS = [
     { id: 'clasico', nombre: 'Corte clásico', min: 30, precio: 35, nota: 'Tijera y máquina' },
@@ -47,7 +49,13 @@
   const KEY = 'blackcuts_reservas';
   let memoria = [];
   function leerReservas() {
-    try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { return memoria; }
+    try {
+      const data = JSON.parse(localStorage.getItem(KEY));
+      if (!Array.isArray(data)) return memoria;
+      return data.filter((r) => r && typeof r.fecha === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.fecha)
+        && BARBEROS.includes(r.barbero) && SERVICIOS.some((s) => s.id === r.servicio)
+        && Number.isFinite(r.inicio) && typeof r.nombre === 'string');
+    } catch (e) { return memoria; }
   }
   function guardarReservas(lista) {
     memoria = lista;
@@ -203,6 +211,11 @@
   }
 
   function render() {
+    $('#ticket').classList.remove('is-booked');
+    $('#ticket-actions').hidden = true;
+    $('#confirm-btn').disabled = false;
+    $('#t-no').textContent = 'Turno N.º ----';
+    $('#t-foot').textContent = 'Este ticket es una demostración y no confirma una cita.';
     pintarServicios();
     pintarBarberos();
     pintarDias('#pick-day', estado.fecha, (f) => { estado.fecha = f; estado.inicio = null; render(); });
@@ -226,6 +239,16 @@
     if (msg) return;
 
     const s = servicio(estado.servicio);
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    if (estado.fecha < ymd(now) || (estado.fecha === ymd(now) && estado.inicio <= currentMinutes + 15)
+      || !barberoLibre(estado.fecha, estado.asignado, estado.inicio, s.min, reservasDelDia(estado.fecha))) {
+      err.textContent = 'Ese horario ya no está disponible. Elige otra hora.';
+      estado.inicio = null;
+      pintarHoras();
+      pintarTicket();
+      return;
+    }
     const numero = String(hash(estado.fecha + estado.inicio + nombre) % 9000 + 1000);
     const reserva = { fecha: estado.fecha, barbero: estado.asignado, inicio: estado.inicio, servicio: s.id, nombre, cel, numero };
     guardarReservas(leerReservas().concat(reserva));
@@ -234,18 +257,20 @@
     $('#t-barber').textContent = estado.asignado;
     $('#t-name').textContent = nombre;
     $('#ticket').classList.add('is-booked');
-    $('#t-foot').textContent = 'Listo. Envíanos el turno por WhatsApp para confirmarlo.';
+    $('#t-foot').textContent = 'Ticket de prueba guardado en este navegador. No se ha reservado una cita real.';
 
-    const texto = `Hola BLACK CUTS, reservé un turno:\n` +
+    const texto = `Hola BLACK CUTS, quiero consultar un turno:\n` +
       `• Turno N.º ${numero}\n• ${s.nombre} (Bs ${s.precio})\n• Barbero: ${estado.asignado}\n` +
       `• ${labelDia(estado.fecha)} a las ${hhmm(estado.inicio)}\n• A nombre de ${nombre}, cel. ${cel}`;
-    $('#wa-confirm').href = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(texto)}`;
+    const wa = $('#wa-confirm');
+    wa.hidden = !/^591[67]\d{7}$/.test(WHATSAPP);
+    if (!wa.hidden) wa.href = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(texto)}`;
     $('#ticket-actions').hidden = false;
     $('#confirm-btn').disabled = true;
 
     agenda.fecha = estado.fecha;
     pintarAgenda();
-    $('#ticket').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    $('#ticket').scrollIntoView({ behavior: scrollBehavior, block: 'center' });
   }
 
   function nuevaReserva() {
@@ -255,11 +280,11 @@
     $('#form-error').textContent = '';
     $('#ticket').classList.remove('is-booked');
     $('#t-no').textContent = 'Turno N.º ----';
-    $('#t-foot').textContent = 'Llega 5 minutos antes. Si no puedes venir, avísanos.';
+    $('#t-foot').textContent = 'Este ticket es una demostración y no confirma una cita.';
     $('#ticket-actions').hidden = true;
     $('#confirm-btn').disabled = false;
     render();
-    $('#reservar').scrollIntoView({ behavior: 'smooth' });
+    $('#reservar').scrollIntoView({ behavior: scrollBehavior });
   }
 
   /* ---------- 6. AGENDA DEL BARBERO ---------- */
@@ -286,7 +311,7 @@
       col.className = 'col';
       const items = suyas.map((r) => {
         const s = servicio(r.servicio);
-        return `<li class="${r.ejemplo ? '' : 'mine'}"><time>${hhmm(r.inicio)}</time><div>${r.nombre}<small>${s.nombre} · Bs ${s.precio}</small></div></li>`;
+        return `<li class="${r.ejemplo ? '' : 'mine'}"><time>${hhmm(r.inicio)}</time><div>${escapeHtml(r.nombre)}<small>${s.nombre} · Bs ${s.precio}</small></div></li>`;
       }).join('');
       col.innerHTML = `<h3>${b}<span>${suyas.length} turnos</span></h3>` +
         (items ? `<ul>${items}</ul>` : '<span class="empty">Sin turnos este día.</span>');
@@ -297,7 +322,7 @@
   /* ---------- 7. PIZARRA Y "ABIERTO AHORA" ---------- */
   function pintarPizarra() {
     $('#board').innerHTML = SERVICIOS.map((s) =>
-      `<li><span class="name">${s.nombre}<small>${s.nota} · ${s.min} min</small></span><span class="leader"></span><span class="price">Bs ${s.precio}</span></li>`
+      `<li><span class="name">${s.nombre}<small>${s.nota} · ${s.min} min</small></span><span class="leader"></span><span class="price">Bs ${s.precio}</span><button class="service-pick" type="button" data-service="${s.id}" aria-label="Elegir ${s.nombre}">↗</button></li>`
     ).join('');
   }
 
@@ -326,7 +351,37 @@
     if (filas[idx]) filas[idx].classList.add('today');
   }
 
-  /* ---------- 8. ARRANQUE ---------- */
+  /* ---------- 8. NAVEGACIÓN ---------- */
+  const toggle = $('.menu-toggle');
+  const nav = $('#main-nav');
+  function closeMenu() {
+    nav.classList.remove('is-open');
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.setAttribute('aria-label', 'Abrir menú');
+  }
+  toggle.addEventListener('click', () => {
+    const open = toggle.getAttribute('aria-expanded') !== 'true';
+    nav.classList.toggle('is-open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Cerrar menú' : 'Abrir menú');
+  });
+  nav.addEventListener('click', (e) => { if (e.target.closest('a')) closeMenu(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') {
+      closeMenu(); toggle.focus();
+    }
+  });
+  $('#board').addEventListener('click', (e) => {
+    const button = e.target.closest('[data-service]');
+    if (!button) return;
+    estado.servicio = button.dataset.service;
+    estado.inicio = null;
+    render();
+    $('#reservar').scrollIntoView({ behavior: scrollBehavior });
+    $('#pick-service [aria-pressed="true"]').focus({ preventScroll: true });
+  });
+
+  /* ---------- 9. ARRANQUE ---------- */
   function primerDiaAbierto() {
     return proximosDias().find((f) => HORARIO[fromYmd(f).getDay()]);
   }
